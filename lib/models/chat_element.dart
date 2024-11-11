@@ -1,20 +1,20 @@
-import 'package:_night_sleep_user/models/chat_body_element.dart';
-
 class ChatElement {
+  final int chatId;
   final String chatType;
   final String chatDay;
-  final ChatBodyElement chatBody;
-  List<int> answerList;
+  final String content;
+  List<String> answerList;
 
   ChatElement({
+    required this.chatId,
     required this.chatType,
     required this.chatDay,
-    required this.chatBody,
+    required this.content,
     required this.answerList,
   });
 
   String get getChatType => chatType;
   String get getChatDay => chatDay;
-  ChatBodyElement get getChatBody => chatBody;
-  bool get getIsComplete => !answerList.contains(-1);
+  String get getContent => content;
+  bool get getIsComplete => !answerList.contains("-1");
 }

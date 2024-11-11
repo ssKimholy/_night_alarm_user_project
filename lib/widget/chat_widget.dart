@@ -18,7 +18,7 @@ class ChatWidget extends StatefulWidget {
 }
 
 class _ChatWidgetState extends State<ChatWidget> {
-  void onChangeAnswerList(List<int> newList) {
+  void onChangeAnswerList(List<String> newList) {
     setState(() {
       widget.chat.answerList = newList;
     });
@@ -48,8 +48,8 @@ class _ChatWidgetState extends State<ChatWidget> {
                     ? const Color(0xff9decd1).withOpacity(0.7)
                     : const Color(0xffef696b).withOpacity(0.7),
               ),
-              child: Text(
-                  '${widget.chat.chatDay} (${DateTimeUtils.convertDateToWeek(widget.chat.chatDay)})',
+              child: Text(widget.chat.chatDay,
+                  // (${DateTimeUtils.convertDateToWeek(widget.chat.chatDay)})',
                   style: const TextStyle(
                       color: Colors.black,
                       fontFamily: 'Noto_Sans_KR',
@@ -57,11 +57,9 @@ class _ChatWidgetState extends State<ChatWidget> {
                       fontWeight: FontWeight.w700)),
             ),
           ),
-          widget.user.getUserType == 'Text Group'
-              ? TextChatWidget(
-                  textBody: widget.chat.chatBody.getTextBody,
-                )
-              : widget.user.getUserType == 'Voice Group'
+          widget.user.getUserType == 'text'
+              ? TextChatWidget(textBody: widget.chat.content)
+              : widget.user.getUserType == 'voice'
                   ? VoiceChatWidget(chat: widget.chat)
                   : VideoChatWidget(chat: widget.chat),
           Padding(

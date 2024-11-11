@@ -66,4 +66,42 @@ class HttpUtil {
       throw Exception('Fail to login');
     }
   }
+
+  static Future<List<dynamic>> getUserChatList(int id) async {
+    final response =
+        await http.get(Uri.parse('$URL/chat/$id'), headers: <String, String>{
+      'Content-Type': 'application/json; charset=UTF-8',
+    });
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      return data;
+    } else {
+      print(response.statusCode);
+      print(response.body);
+      throw Exception('Fail to login');
+    }
+  }
+
+  static Future<void> setDailySurveyAnswer(
+      int chatId, String a_1, String a_2) async {
+    final response = await http.post(
+      Uri.parse('$URL/answer/$chatId'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, String>{
+        "answer1": a_1.toString(),
+        "answer2": a_2.toString(),
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      print('success!!');
+      return;
+    } else {
+      print(response.statusCode);
+      throw Exception('Fail to register');
+    }
+  }
 }

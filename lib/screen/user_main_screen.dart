@@ -1,3 +1,4 @@
+import 'package:_night_sleep_user/models/chat_element.dart';
 import 'package:_night_sleep_user/models/user_element.dart';
 import 'package:_night_sleep_user/models/weekly_survey_element.dart';
 import 'package:_night_sleep_user/screen/weekly_%20mediation_screen.dart';
@@ -36,11 +37,6 @@ class _UserMainScreenState extends State<UserMainScreen> {
     registerUser();
     // getMyDeviceToken();
 
-    // 페이지가 로드될 때 맨 아래로 스크롤
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToBottom();
-    });
-
     // FCM 초기화 및 토큰 수신
     FirebaseMessaging.instance.getToken().then((token) {
       print("FCM Token: $token");
@@ -59,23 +55,53 @@ class _UserMainScreenState extends State<UserMainScreen> {
     });
   }
 
+  ChatElement _parseJsonToChatElement(Map<String, dynamic> json) {
+    return ChatElement(
+      chatId: json['chatId'],
+      chatType: json['user']['userType'],
+      chatDay: json['alarm']['alarmDays'],
+      content: json['user']['userType'] == 'text'
+          ? json['alarm']['textContent']
+          : json['alarm']['alarmContent'],
+      answerList: [
+        json['answer']['answer1'] ?? '-1',
+        json['answer']['answer2'] ?? '-1',
+      ],
+    );
+  }
+
   void registerUser() async {
     Map<String, dynamic> userData = await HttpUtil.getUserInfo(widget.userId);
     print(userData["userName"]);
+
+    final List chatList = await HttpUtil.getUserChatList(widget.userId);
+    final userChatList = chatList
+        .map<ChatElement>((json) => _parseJsonToChatElement(json))
+        .toList();
+
     setState(() {
       widget.userService.registerUser(
-        userData["userName"],
-        userData["userId"],
-        userData["password"],
-        userData["userType"],
-        userData["deviceKey"],
-      );
+          userData["userName"],
+          userData["userId"],
+          userData["password"],
+          userData["userType"],
+          userData["deviceKey"],
+          userChatList);
+    });
+
+    // 페이지가 로드될 때 맨 아래로 스크롤
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom();
     });
   }
 
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
-      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOut,
+      );
     }
   }
 

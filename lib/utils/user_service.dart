@@ -8,14 +8,14 @@ class UserService {
   UserElement? _user;
 
   void registerUser(String userName, int userId, String userPassword,
-      String type, String userDevicecode) {
+      String type, String userDevicecode, List<ChatElement> chatList) {
     _user = UserElement(
       userName: userName,
       userId: userId,
       userPassword: userPassword,
       type: type,
       userDeviceCode: userDevicecode,
-      chatList: [], // 초기화된 채팅 목록
+      chatList: chatList, // 초기화된 채팅 목록
       weeklySurvey: WeeklySurveyElement(answer: {
         1: [-1, -1, -1],
         2: [-1, -1, -1],

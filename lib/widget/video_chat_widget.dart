@@ -35,7 +35,7 @@ class _VideoChatWidgetState extends State<VideoChatWidget> {
               ),
               GestureDetector(
                 onTap: () {
-                  widget.chat.chatBody.playVideoMessage();
+                  // video 재생
                 },
                 child: const Icon(
                   Icons.play_circle_outline,
