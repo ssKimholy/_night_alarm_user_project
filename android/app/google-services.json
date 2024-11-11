@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "866253613907",
+    "project_id": "alarmcare-3eb10",
+    "storage_bucket": "alarmcare-3eb10.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:866253613907:android:dce4d50f3daddcd92e0fa6",
+        "android_client_info": {
+          "package_name": "com.example.u_night_sleep_user"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA4wds6Y0nUzzSrf6lOhBzOSr0yBaZ8bcM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
