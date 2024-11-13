@@ -59,9 +59,12 @@ class _UserMainScreenState extends State<UserMainScreen> {
     return ChatElement(
       chatId: json['chatId'],
       chatType: json['user']['userType'],
-      chatDay: json['alarm']['alarmDays'],
-      content: json['user']['userType'] == 'text'
+      chatDay: json['createdAt'].split('T')[0],
+      textContent: json['user']['userType'] == 'text'
           ? json['alarm']['textContent']
+          : '',
+      mediaContent: json['user']['userType'] == 'text'
+          ? {"null": "2"}
           : json['alarm']['alarmContent'],
       answerList: [
         json['answer']['answer1'] ?? '-1',
@@ -131,13 +134,13 @@ class _UserMainScreenState extends State<UserMainScreen> {
         appBar: AppBar(
           toolbarHeight: 80,
           backgroundColor: Colors.white,
-          title: Text(
-            '${user.getUserName} 참여자',
-            style: const TextStyle(
+          title: const Text(
+            'SleepCare',
+            style: TextStyle(
                 color: Colors.black,
                 fontFamily: 'Noto_Sans_KR',
-                fontSize: 18,
-                fontWeight: FontWeight.w600),
+                fontSize: 20,
+                fontWeight: FontWeight.bold),
           ),
           actions: [
             Padding(
@@ -183,7 +186,11 @@ class _UserMainScreenState extends State<UserMainScreen> {
             controller: _scrollController,
             itemCount: user.chatList.length,
             itemBuilder: (context, index) {
-              return ChatWidget(user: user, chat: user.chatList[index]);
+              return ChatWidget(
+                user: user,
+                chat: user.chatList[index],
+                tmpList: user.chatList[index].answerList.toList(),
+              );
             },
           ),
         ));

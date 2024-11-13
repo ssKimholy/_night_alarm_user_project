@@ -217,7 +217,7 @@ class _DailySurveyScreenState extends State<DailySurveyScreen> {
                 await HttpUtil.setDailySurveyAnswer(
                     widget.chat.chatId, widget.tmpList[0], widget.tmpList[1]);
 
-                if (widget.tmpList.contains(-1)) {
+                if (widget.tmpList.contains('-1')) {
                   // 100% 설문을 완료한 것이 아니면 다시 하도록
                   const snackBar = SnackBar(
                     content: Text('모든 문항에 답변해주세요.'),

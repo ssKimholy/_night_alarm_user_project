@@ -1,7 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 
 class HttpUtil {
   static final String URL = dotenv.env['SERVER_IP']!;
@@ -103,5 +106,47 @@ class HttpUtil {
       print(response.statusCode);
       throw Exception('Fail to register');
     }
+  }
+
+  static Future<String> playVoiceMessage(int contentId) async {
+    Directory directory = await getApplicationDocumentsDirectory();
+    final String filePath = '${directory.path}/${contentId.toString()}.mp3';
+    final File file = File(filePath);
+
+    if (!await file.exists()) {
+      try {
+        var dio = Dio();
+
+        final response = await dio.download(
+            '$URL/chat/content/${contentId.toString()}', filePath);
+
+        print('status: ${response.statusCode}');
+      } catch (e) {
+        print('Failed to download file: $e');
+      }
+    }
+
+    return filePath;
+  }
+
+  static Future<String> playVideoMessage(int contentId) async {
+    Directory directory = await getApplicationDocumentsDirectory();
+    final String filePath = '${directory.path}/${contentId.toString()}.mp4';
+    final File file = File(filePath);
+
+    if (!await file.exists()) {
+      try {
+        var dio = Dio();
+
+        final response = await dio.download(
+            '$URL/chat/content/${contentId.toString()}', filePath);
+
+        print('status: ${response.statusCode}');
+      } catch (e) {
+        print('Failed to download file: $e');
+      }
+    }
+
+    return filePath;
   }
 }
