@@ -24,10 +24,15 @@ Future<void> showNotification(RemoteMessage message) async {
   const NotificationDetails notificationDetails =
       NotificationDetails(android: androidNotificationDetails);
 
+  String? title = message.data['title'] ?? '메시지 도착';
+  String? body = message.data['body'] ?? '메시지가 도착했습니다!';
+
+  print(message.data.entries);
+
   await flutterLocalNotificationsPlugin.show(
     message.hashCode,
-    message.data['title'] ?? 'Default Title',
-    message.data['body'] ?? 'Default Body',
+    title,
+    body,
     notificationDetails,
   );
 }

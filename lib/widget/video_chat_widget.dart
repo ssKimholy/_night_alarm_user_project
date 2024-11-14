@@ -6,9 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
 class VideoChatWidget extends StatefulWidget {
-  ChatElement chat;
+  final ChatElement chat;
 
-  VideoChatWidget({super.key, required this.chat});
+  const VideoChatWidget({super.key, required this.chat});
 
   @override
   State<VideoChatWidget> createState() => _VideoChatWidgetState();
@@ -17,14 +17,12 @@ class VideoChatWidget extends StatefulWidget {
 class _VideoChatWidgetState extends State<VideoChatWidget> {
   late VideoPlayerController _controller;
   bool _isInitialized = false;
+  bool _isPlaying = false;
 
   @override
   void initState() {
     super.initState();
     _initializeVideo();
-    // _controller =
-    //     VideoPlayerController.networkUrl(Uri.parse(widget.chat.content))
-    //       ..initialize().then((_) => setState(() {}));
   }
 
   Future<void> _initializeVideo() async {
@@ -34,70 +32,90 @@ class _VideoChatWidgetState extends State<VideoChatWidget> {
 
     _controller = VideoPlayerController.file(file)
       ..initialize().then((_) {
-        setState(() {
-          _isInitialized = true;
-        });
+        if (mounted) {
+          setState(() {
+            _isInitialized = true;
+          });
+        }
+      })
+      ..addListener(_videoListener);
+  }
+
+  void _videoListener() {
+    if (_isInitialized &&
+        _controller.value.position >= _controller.value.duration) {
+      setState(() {
+        _stopVideo();
       });
+    }
+  }
+
+  void _stopVideo() {
+    _controller.pause();
+    _controller.seekTo(Duration.zero);
+    setState(() {
+      _isPlaying = false;
+    });
   }
 
   @override
   void dispose() {
+    _controller.removeListener(_videoListener); // 리스너 제거
     _controller.dispose();
     super.dispose();
   }
 
-  void _playFullScreenVideo() {
-    _controller.play();
-    Navigator.of(context)
-        .push(
-      MaterialPageRoute(
-        builder: (context) => FullScreenVideoScreen(controller: _controller),
-      ),
-    )
-        .then((_) {
-      // Pause the video when returning from fullscreen
-      _controller.pause();
-    });
+  void _playFullScreenVideo() async {
+    if (_isInitialized) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => FullScreenVideoScreen(controller: _controller),
+        ),
+      );
+      setState(() {
+        _isPlaying = _controller.value.isPlaying;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-        padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 10.0),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(7.0),
-          color: const Color(0xffedeeee),
-        ),
-        child: Center(
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(3.0),
-                child: _isInitialized
-                    ? Image.network(
-                        'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTVQfz5alLQyLoEJkvsYTwQJMZh5rSu7rfvuX1d2jeKxqF9KcGDYbOxPrvJeYkO3UWSAq8&usqp=CAU',
-                        width: 240,
-                        height: 200,
-                        fit: BoxFit.cover,
-                      )
-                    : const CircularProgressIndicator(),
+      margin: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+      padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 10.0),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(7.0),
+        color: const Color(0xffedeeee),
+      ),
+      child: Center(
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(3.0),
+              child: _isInitialized
+                  ? Image.network(
+                      'https://www.polytec.com.au/img/products/960-960/mercurio-grey.jpg',
+                      width: 240,
+                      height: 200,
+                      fit: BoxFit.cover,
+                    )
+                  : const CircularProgressIndicator(),
+            ),
+            GestureDetector(
+              onTap: () {
+                _playFullScreenVideo();
+              },
+              child: const Icon(
+                Icons.play_circle_outline,
+                color: Color(0xff3ad277),
+                size: 40,
               ),
-              GestureDetector(
-                onTap: () {
-                  // video 재생
-                  _playFullScreenVideo();
-                },
-                child: const Icon(
-                  Icons.play_circle_outline,
-                  color: Color(0xff3ad277),
-                  size: 40,
-                ),
-              )
-            ],
-          ),
-        ));
+            )
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -111,15 +129,41 @@ class FullScreenVideoScreen extends StatefulWidget {
 }
 
 class _FullScreenVideoScreenState extends State<FullScreenVideoScreen> {
+  bool _isPlaying = false;
+
   @override
   void initState() {
     super.initState();
-    widget.controller.play(); // Automatically start playing when in fullscreen
+
+    // Ensure that the video controller is initialized before trying to play
+    if (widget.controller.value.isInitialized) {
+      setState(() {
+        _isPlaying = true;
+      });
+      widget.controller.play();
+    }
+
+    widget.controller.addListener(_videoEndListener);
+  }
+
+  void _videoEndListener() {
+    if (widget.controller.value.position >= widget.controller.value.duration) {
+      setState(() {
+        _isPlaying = false;
+      });
+      _stopVideo();
+    }
+  }
+
+  void _stopVideo() {
+    widget.controller.pause();
+    widget.controller.seekTo(Duration.zero);
   }
 
   @override
   void dispose() {
-    widget.controller.pause(); // Pause when exiting fullscreen
+    widget.controller.removeListener(_videoEndListener);
+    _stopVideo();
     super.dispose();
   }
 
@@ -137,13 +181,18 @@ class _FullScreenVideoScreenState extends State<FullScreenVideoScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Toggle play/pause
-          widget.controller.value.isPlaying
-              ? widget.controller.pause()
-              : widget.controller.play();
+          setState(() {
+            if (_isPlaying) {
+              widget.controller.pause();
+              _isPlaying = false;
+            } else {
+              widget.controller.play();
+              _isPlaying = true;
+            }
+          });
         },
         child: Icon(
-          widget.controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
+          _isPlaying ? Icons.pause : Icons.play_arrow,
         ),
       ),
     );

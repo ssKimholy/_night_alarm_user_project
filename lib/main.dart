@@ -41,20 +41,25 @@ class MyApp extends StatelessWidget {
 
   const MyApp({super.key});
 
-  Future<String> getInitialRoute() async {
+  Future<Map<String, String>> getInitialRouteData() async {
     try {
-      final String? route = await _channel.invokeMethod('getRoute');
-      return route ?? "/";
+      // Receive the data from Android as a map
+      final Map<dynamic, dynamic> routeData =
+          await _channel.invokeMethod('getRoute');
+
+      // Cast the dynamic map to Map<String, String> safely
+      return routeData
+          .map((key, value) => MapEntry(key.toString(), value.toString()));
     } catch (e) {
-      print("Error in getting initial route: $e");
-      return "/";
+      print("Error in getting initial route data: $e");
+      return {"route": "/"};
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<String>(
-      future: getInitialRoute(),
+    return FutureBuilder<Map<String, String>>(
+      future: getInitialRouteData(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const MaterialApp(
@@ -65,7 +70,10 @@ class MyApp extends StatelessWidget {
         }
 
         // Use snapshot data as the initial route for SplashScreen
-        final initialRoute = snapshot.data ?? "/";
+        final routeData = snapshot.data ?? {"route": "/"};
+        final initialRoute = routeData["route"] ?? "/";
+        final alarmData = routeData; // Pass the full map for additional data
+
         return MaterialApp(
           title: 'alarmcare',
           debugShowCheckedModeBanner: false,
@@ -82,7 +90,10 @@ class MyApp extends StatelessWidget {
             Locale('en', ''),
             Locale('ko', ''),
           ],
-          home: SplashScreen(initialRoute: initialRoute),
+          home: SplashScreen(
+            initialRoute: initialRoute,
+            alarmData: alarmData,
+          ),
         );
       },
     );

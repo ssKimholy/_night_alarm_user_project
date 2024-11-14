@@ -43,12 +43,21 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
-        // Set up the MethodChannel to handle 'getRoute'
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "getRoute" -> {
                     val route = intent.getStringExtra("route") ?: "/"
-                    result.success(route)
+
+                    // Extract FCM data from Intent extras
+                    val data = mutableMapOf<String, String>()
+                    intent.extras?.keySet()?.forEach { key ->
+                        intent.getStringExtra(key)?.let { value ->
+                            data[key] = value
+                        }
+                    }
+
+                    data["route"] = route // Include the route
+                    result.success(data)  // Send the combined map to Flutter
                 }
                 else -> result.notImplemented()
             }

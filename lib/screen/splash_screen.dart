@@ -7,8 +7,10 @@ import 'package:get_it/get_it.dart';
 
 class SplashScreen extends StatefulWidget {
   final String initialRoute;
+  final Map<String, dynamic> alarmData;
 
-  const SplashScreen({super.key, required this.initialRoute});
+  const SplashScreen(
+      {super.key, required this.initialRoute, required this.alarmData});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -30,7 +32,10 @@ class _SplashScreenState extends State<SplashScreen> {
     if (widget.initialRoute == "/alarmPage") {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const AlarmScreen()),
+        MaterialPageRoute(
+            builder: (context) => AlarmScreen(
+                  alarmData: widget.alarmData,
+                )),
       );
     } else {
       _checkLoginStatus();

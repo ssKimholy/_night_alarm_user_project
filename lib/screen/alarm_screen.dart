@@ -7,10 +7,13 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 
 class AlarmScreen extends StatelessWidget {
-  const AlarmScreen({super.key});
+  Map<String, dynamic> alarmData;
+
+  AlarmScreen({super.key, required this.alarmData});
 
   void playAlarmSound() {
     print('in the alarm screen');
+    print('this: $alarmData');
     FlutterRingtonePlayer.playAlarm();
   }
 
