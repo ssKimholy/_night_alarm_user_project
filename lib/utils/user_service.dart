@@ -7,22 +7,24 @@ import 'package:shared_preferences/shared_preferences.dart';
 class UserService {
   UserElement? _user;
 
-  void registerUser(String userName, int userId, String userPassword,
-      String type, String userDevicecode, List<ChatElement> chatList) {
+  void registerUser(
+      String userName,
+      int userId,
+      String userPassword,
+      String type,
+      String userDevicecode,
+      bool isCompletedWeeklySurvey,
+      List<ChatElement> chatList,
+      List<WeeklySurveyElement> weeklySurveyList) {
     _user = UserElement(
       userName: userName,
       userId: userId,
       userPassword: userPassword,
       type: type,
+      isCompletedWeeklySurvey: isCompletedWeeklySurvey,
       userDeviceCode: userDevicecode,
-      chatList: chatList, // 초기화된 채팅 목록
-      weeklySurvey: WeeklySurveyElement(answer: {
-        1: [-1, -1, -1],
-        2: [-1, -1, -1],
-        3: [-1, -1, -1],
-        4: [-1, -1, -1],
-        5: [-1, -1, -1]
-      }),
+      chatList: chatList,
+      weeklySurveyList: weeklySurveyList,
       // 초기화된 설문 목록
       experimentWeek: 1, // 초기 주차
     );

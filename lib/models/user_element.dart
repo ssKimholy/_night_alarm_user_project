@@ -8,19 +8,20 @@ class UserElement {
   String type;
   String userDeviceCode;
   List<ChatElement> chatList;
-  WeeklySurveyElement weeklySurvey;
+  List<WeeklySurveyElement> weeklySurveyList;
   int experimentWeek;
+  bool isCompletedWeeklySurvey;
 
-  UserElement({
-    required this.userName,
-    required this.userId,
-    required this.userPassword,
-    required this.type,
-    required this.userDeviceCode,
-    required this.chatList,
-    required this.weeklySurvey,
-    required this.experimentWeek,
-  });
+  UserElement(
+      {required this.userName,
+      required this.userId,
+      required this.userPassword,
+      required this.type,
+      required this.userDeviceCode,
+      required this.chatList,
+      required this.weeklySurveyList,
+      required this.experimentWeek,
+      required this.isCompletedWeeklySurvey});
 
   String get getUserName => userName;
   int get getUserId => userId;
@@ -28,11 +29,7 @@ class UserElement {
   String get getUserDeviceCode => userDeviceCode;
   List<ChatElement> get getChatList => chatList;
   int get getExperimentWeek => experimentWeek;
-  WeeklySurveyElement get getWeeklySurvey => weeklySurvey;
-
-  List<int> getWeeklySurveyList(int week) {
-    return weeklySurvey.getAnswer(week);
-  }
+  List<WeeklySurveyElement> get getWeeklySurveyList => weeklySurveyList;
 
   void setUserDeviceCode(String devicecode) {
     userDeviceCode = devicecode;

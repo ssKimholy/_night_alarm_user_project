@@ -1,18 +1,18 @@
 import 'package:_night_sleep_user/models/user_element.dart';
+import 'package:_night_sleep_user/utils/http_util.dart';
 import 'package:flutter/material.dart';
 
 class WeeklySurveyScreen extends StatefulWidget {
   List<int> tmpSleepList;
   final UserElement user;
-  final Function onChangeWeeklySurvey;
-  int weekNum;
+  Function setIsWeeklySurveyCompleted;
 
-  WeeklySurveyScreen(
-      {super.key,
-      required this.tmpSleepList,
-      required this.user,
-      required this.onChangeWeeklySurvey,
-      required this.weekNum});
+  WeeklySurveyScreen({
+    super.key,
+    required this.tmpSleepList,
+    required this.user,
+    required this.setIsWeeklySurveyCompleted,
+  });
 
   @override
   State<WeeklySurveyScreen> createState() => _WeeklySurveyScreenState();
@@ -24,10 +24,10 @@ class _WeeklySurveyScreenState extends State<WeeklySurveyScreen> {
       children: [
         GestureDetector(
           onTap: () {
-            if (widget.user.getWeeklySurvey
-                .isWeeklySurveyComplete(widget.weekNum)) {
-              return; // 설문 수정 불가
-            }
+            // if (widget.user.getWeeklySurvey
+            //     .isWeeklySurveyComplete(widget.weekNum)) {
+            //   return; // 설문 수정 불가
+            // }
             setState(() {
               widget.tmpSleepList[qIndex] = nIndex;
             });
@@ -114,9 +114,9 @@ class _WeeklySurveyScreenState extends State<WeeklySurveyScreen> {
             const SizedBox(
               height: 20.0,
             ),
-            Center(
-              child: Text('실험 ${widget.weekNum}주차 설문',
-                  style: const TextStyle(
+            const Center(
+              child: Text('주간 설문',
+                  style: TextStyle(
                       color: Colors.black,
                       fontFamily: 'Noto_Sans_KR',
                       fontSize: 18,
@@ -223,9 +223,7 @@ class _WeeklySurveyScreenState extends State<WeeklySurveyScreen> {
               height: 40.0,
             ),
             GestureDetector(
-              onTap: () {
-                // manager는 전송 불가
-
+              onTap: () async {
                 // http 설문 결과 전송.
                 if (widget.tmpSleepList.contains(-1)) {
                   // 100% 설문을 완료한 것이 아니면 다시 하도록
@@ -236,10 +234,14 @@ class _WeeklySurveyScreenState extends State<WeeklySurveyScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(snackBar);
                   return;
                 }
-                setState(() {
-                  widget.onChangeWeeklySurvey(
-                      widget.tmpSleepList, widget.weekNum);
-                });
+                // setState(() {
+                //   widget.onChangeWeeklySurvey(
+                //       widget.tmpSleepList, widget.weekNum);
+                // });
+
+                widget.setIsWeeklySurveyCompleted(true);
+                await HttpUtil.setWeeklySurveyResult(
+                    widget.user.userId, widget.tmpSleepList);
                 Navigator.pop(context);
               },
               child: Container(

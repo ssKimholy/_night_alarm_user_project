@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 
 class VoiceChatWidget extends StatefulWidget {
-  ChatElement chat;
+  final ChatElement chat;
 
-  VoiceChatWidget({
+  const VoiceChatWidget({
     super.key,
     required this.chat,
   });
@@ -18,7 +18,9 @@ class VoiceChatWidget extends StatefulWidget {
 class _VoiceChatWidgetState extends State<VoiceChatWidget> {
   late AudioPlayer _audioPlayer;
   bool isPlaying = false;
+  bool isLoaded = false;
   Duration _audioDuration = Duration.zero;
+  String? audioPath;
 
   @override
   void initState() {
@@ -27,35 +29,83 @@ class _VoiceChatWidgetState extends State<VoiceChatWidget> {
 
     // Listen for the duration of the audio when it’s loaded
     _audioPlayer.onDurationChanged.listen((duration) {
-      setState(() {
-        _audioDuration = duration;
-      });
+      if (mounted) {
+        setState(() {
+          _audioDuration = duration;
+        });
+      }
     });
 
-    // Load the audio file to get the duration
+    // Listen for audio completion to reset play icon and seek to start
+    _audioPlayer.onPlayerComplete.listen((event) async {
+      if (mounted) {
+        setState(() {
+          isPlaying = false;
+        });
+      }
+      await _resetAudioSource(); // Reload the source after playback completes
+    });
+
+    // Load the audio file to prepare it for playback
     _loadAudio();
   }
 
   Future<void> _loadAudio() async {
     try {
-      final String path = await HttpUtil.playVoiceMessage(
+      audioPath = await HttpUtil.playVoiceMessage(
           widget.chat.mediaContent['contentId']);
-      print(path);
-      await _audioPlayer.setSourceDeviceFile(path);
+      print("Audio path received: $audioPath"); // Debugging output
+
+      if (audioPath != null && audioPath!.isNotEmpty) {
+        await _audioPlayer.setSourceDeviceFile(audioPath!);
+        setState(() {
+          isLoaded = true; // Indicate that the audio has loaded successfully
+        });
+      } else {
+        print("Audio path is empty or null.");
+      }
     } catch (e) {
       print("Error loading audio: $e");
     }
   }
 
-  void _togglePlayPause() async {
+  Future<void> _resetAudioSource() async {
+    if (audioPath != null && audioPath!.isNotEmpty) {
+      try {
+        await _audioPlayer.setSourceDeviceFile(audioPath!);
+      } catch (e) {
+        print("Error resetting audio source: $e");
+      }
+    } else {
+      print("Audio path is empty or null in _resetAudioSource.");
+    }
+  }
+
+  Future<void> _togglePlayPause() async {
+    if (!isLoaded) {
+      // Prevent playback if audio hasn't loaded yet
+      print("Audio not loaded yet.");
+      return;
+    }
+
     if (isPlaying) {
       await _audioPlayer.pause();
     } else {
+      final position = await _audioPlayer.getCurrentPosition();
+      print("Current position: $position"); // Debugging output
+
+      if (position == null || position >= _audioDuration) {
+        // If the audio is at the end or position is null, reset to the start
+        await _audioPlayer.seek(Duration.zero);
+        await _resetAudioSource(); // Ensure the source is set for replay
+      }
       await _audioPlayer.resume();
     }
-    setState(() {
-      isPlaying = !isPlaying;
-    });
+    if (mounted) {
+      setState(() {
+        isPlaying = !isPlaying;
+      });
+    }
   }
 
   String formatDuration(Duration duration) {
@@ -79,8 +129,12 @@ class _VoiceChatWidgetState extends State<VoiceChatWidget> {
           child: Column(
             children: [
               GestureDetector(
-                onTap: () {
-                  _togglePlayPause();
+                onTap: () async {
+                  await _togglePlayPause();
+                  if (!widget.chat.firstWatching) {
+                    print('first');
+                    await HttpUtil.setFirstWatching(widget.chat.chatId);
+                  }
                 },
                 child: Icon(
                   isPlaying
@@ -90,14 +144,14 @@ class _VoiceChatWidgetState extends State<VoiceChatWidget> {
                   color: const Color(0xff3ad277),
                 ),
               ),
-
-              // 음성 길이 설정
-              Text(formatDuration(_audioDuration),
-                  style: const TextStyle(
-                      color: Colors.black,
-                      fontFamily: 'Noto_Sans_KR',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500))
+              Text(
+                formatDuration(_audioDuration),
+                style: const TextStyle(
+                    color: Colors.black,
+                    fontFamily: 'Noto_Sans_KR',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500),
+              )
             ],
           )),
     );

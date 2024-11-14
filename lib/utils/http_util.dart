@@ -86,6 +86,23 @@ class HttpUtil {
     }
   }
 
+  static Future<void> setFirstWatching(int chatId) async {
+    final response = await http.post(
+        Uri.parse('$URL/chat/play/${chatId.toString()}'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        });
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      return data;
+    } else {
+      print(response.statusCode);
+      print(response.body);
+      throw Exception('Fail to login');
+    }
+  }
+
   static Future<void> setDailySurveyAnswer(
       int chatId, String a_1, String a_2) async {
     final response = await http.post(
@@ -105,6 +122,23 @@ class HttpUtil {
     } else {
       print(response.statusCode);
       throw Exception('Fail to register');
+    }
+  }
+
+  static Future<void> setImmediatelyChecked(int chatId) async {
+    final response = await http.post(
+      Uri.parse('$URL/chat/${chatId.toString()}'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      print('success immeduatelyChecked!!');
+      return;
+    } else {
+      print(response.statusCode);
+      throw Exception('Fail to immediatelyChecked!');
     }
   }
 
@@ -148,5 +182,27 @@ class HttpUtil {
     }
 
     return filePath;
+  }
+
+  static Future<void> setWeeklySurveyResult(
+      int userId, List<int> answerList) async {
+    final response = await http.post(
+        Uri.parse('$URL/weekSurvey/complete/${userId.toString()}'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode({
+          "survey1": answerList[0].toString(),
+          "survey2": answerList[1].toString(),
+          "survey3": answerList[2].toString(),
+        }));
+
+    if (response.statusCode == 200) {
+      print('success weeklySurveyResult!!');
+      return;
+    } else {
+      print(response.statusCode);
+      throw Exception('Fail to weeklySurveyResult!!');
+    }
   }
 }

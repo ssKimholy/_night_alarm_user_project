@@ -1,4 +1,5 @@
 import 'package:_night_sleep_user/screen/user_main_screen.dart';
+import 'package:_night_sleep_user/utils/http_util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -74,12 +75,18 @@ class AlarmScreen extends StatelessWidget {
             height: 80,
           ),
           GestureDetector(
-            onTap: () {
+            onTap: () async {
               // 메시지 확인
               stopAlarmSound();
-              // Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) {
-              //   return UserMainScreen(userId: userId)
-              // },), (route) => false);
+
+              await HttpUtil.setImmediatelyChecked(
+                  int.parse(alarmData["chatId"]));
+
+              Navigator.pushAndRemoveUntil(context, MaterialPageRoute(
+                builder: (context) {
+                  return UserMainScreen(userId: int.parse(alarmData["userId"]));
+                },
+              ), (route) => false);
             },
             child: Container(
               padding:

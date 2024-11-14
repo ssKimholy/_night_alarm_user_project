@@ -1,7 +1,6 @@
 import 'package:_night_sleep_user/models/chat_element.dart';
 import 'package:_night_sleep_user/models/user_element.dart';
 import 'package:_night_sleep_user/models/weekly_survey_element.dart';
-import 'package:_night_sleep_user/screen/weekly_%20mediation_screen.dart';
 import 'package:_night_sleep_user/screen/weekly_survey_screen.dart';
 import 'package:_night_sleep_user/utils/http_util.dart';
 import 'package:_night_sleep_user/utils/notification_helper.dart';
@@ -14,6 +13,7 @@ import '../main.dart';
 
 class UserMainScreen extends StatefulWidget {
   final int userId;
+  bool isWeeklySurveyComplete = false;
 
   UserMainScreen({super.key, required this.userId});
   final userService = GetIt.instance<UserService>();
@@ -55,11 +55,18 @@ class _UserMainScreenState extends State<UserMainScreen> {
     });
   }
 
+  void setIsWeeklySurveyCompleted(bool b) {
+    setState(() {
+      widget.isWeeklySurveyComplete = b;
+    });
+  }
+
   ChatElement _parseJsonToChatElement(Map<String, dynamic> json) {
     return ChatElement(
       chatId: json['chatId'],
       chatType: json['user']['userType'],
       chatDay: json['createdAt'].split('T')[0],
+      firstWatching: json['played'],
       textContent: json['user']['userType'] == 'text'
           ? json['alarm']['textContent']
           : '',
@@ -82,14 +89,27 @@ class _UserMainScreenState extends State<UserMainScreen> {
         .map<ChatElement>((json) => _parseJsonToChatElement(json))
         .toList();
 
+    final List<WeeklySurveyElement> weeklySurveyList = [
+      WeeklySurveyElement(weekNum: 1, answerList: [-1, -1, -1]),
+      WeeklySurveyElement(weekNum: 2, answerList: [-1, -1, -1]),
+      WeeklySurveyElement(weekNum: 3, answerList: [-1, -1, -1]),
+      WeeklySurveyElement(weekNum: 4, answerList: [-1, -1, -1]),
+      WeeklySurveyElement(weekNum: 5, answerList: [-1, -1, -1])
+    ];
+
     setState(() {
       widget.userService.registerUser(
-          userData["userName"],
-          userData["userId"],
-          userData["password"],
-          userData["userType"],
-          userData["deviceKey"],
-          userChatList);
+        userData["userName"],
+        userData["userId"],
+        userData["password"],
+        userData["userType"],
+        userData["deviceKey"],
+        userData["isSurveyCompleted"], // completedWeeklySurvey
+        userChatList,
+        weeklySurveyList,
+      );
+
+      widget.isWeeklySurveyComplete = userData["isSurveyCompleted"];
     });
 
     // 페이지가 로드될 때 맨 아래로 스크롤
@@ -147,10 +167,18 @@ class _UserMainScreenState extends State<UserMainScreen> {
               padding: const EdgeInsets.all(8.0),
               child: GestureDetector(
                 onTap: () {
+                  // 주간 설문 완료 했다면 못 들어감
+                  if (widget.isWeeklySurveyComplete) {
+                    return;
+                  }
                   // 주간 설문 페이지로 이동
                   Navigator.push(context, MaterialPageRoute(
                     builder: (context) {
-                      return WeekyMediationScreen(user: user);
+                      return WeeklySurveyScreen(
+                        tmpSleepList: [-1, -1, -1].toList(),
+                        user: user,
+                        setIsWeeklySurveyCompleted: setIsWeeklySurveyCompleted,
+                      );
                     },
                   ));
                 },
@@ -159,7 +187,9 @@ class _UserMainScreenState extends State<UserMainScreen> {
                   decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(15.0),
                       // 실험 주를 세는 속성이 있어야 함.
-                      color: Colors.grey),
+                      color: widget.isWeeklySurveyComplete
+                          ? const Color(0xff9decd1).withOpacity(0.7)
+                          : const Color(0xffef696b).withOpacity(0.7)),
                   child: const Column(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [

@@ -1,25 +1,18 @@
 class WeeklySurveyElement {
-  Map<int, List<int>> answer;
+  int weekNum;
+  List<int> answerList;
 
   WeeklySurveyElement({
-    required this.answer,
+    required this.weekNum,
+    required this.answerList,
   });
 
-  List<int> getAnswer(int weekNum) {
-    return answer[weekNum]!;
-  }
+  int get getWeekNum => weekNum;
+  List<int> get getAnswerList => answerList;
 
-  void setAnswer(int weekNum, List<int> sl) {
-    answer[weekNum] = sl;
+  void setAnswerList(List<int> list) {
+    answerList = list;
   }
-
-  bool isWeeklySurveyComplete(int week) {
-    if (answer[week]!.contains(-1)) {
-      return false;
-    }
-    return true;
-  }
-
   // void setPhq(List<int> pq) {
   //   phq = pq;
   // }

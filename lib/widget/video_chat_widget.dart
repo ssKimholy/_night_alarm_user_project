@@ -65,7 +65,7 @@ class _VideoChatWidgetState extends State<VideoChatWidget> {
     super.dispose();
   }
 
-  void _playFullScreenVideo() async {
+  Future<void> _playFullScreenVideo() async {
     if (_isInitialized) {
       await Navigator.of(context).push(
         MaterialPageRoute(
@@ -103,8 +103,11 @@ class _VideoChatWidgetState extends State<VideoChatWidget> {
                   : const CircularProgressIndicator(),
             ),
             GestureDetector(
-              onTap: () {
-                _playFullScreenVideo();
+              onTap: () async {
+                await _playFullScreenVideo();
+                if (!widget.chat.firstWatching) {
+                  await HttpUtil.setFirstWatching(widget.chat.chatId);
+                }
               },
               child: const Icon(
                 Icons.play_circle_outline,
