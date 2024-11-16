@@ -14,7 +14,7 @@ class BackgroundTaskWorker(
         return try {
             val manager = HealthConnectManager(applicationContext)
             manager.fetchAndSaveSleepData()
-            Log.d("BackgroundTaskWorker", "Background sleep data fetch and upload complete.")
+            Log.d("BackgroundTaskWorker", "Sleep data fetch and upload complete.")
             Result.success()
         } catch (e: Exception) {
             Log.e("BackgroundTaskWorker", "Error during background task", e)

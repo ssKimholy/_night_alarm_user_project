@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 class DateTimeUtils {
   static String formatCurrentTime() {
     var now = DateTime.now();
-    var formatter = DateFormat('yyyy-MM-dd HH:mm');
+    var formatter = DateFormat('yyyy-MM-dd HH:mm:ss');
     return formatter.format(now);
   }
 

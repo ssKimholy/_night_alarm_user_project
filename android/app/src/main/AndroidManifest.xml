@@ -13,8 +13,8 @@
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <!-- Permissions for Health Connect -->
-    <uses-permission android:name="android.permission.READ_HEALTH_CONNECT_DATA" />
-    <uses-permission android:name="android.permission.WRITE_HEALTH_CONNECT_DATA" />
+    <uses-permission android:name="android.permission.health.READ_SLEEP" />
+    <uses-permission android:name="android.permission.health.WRITE_SLEEP" />
 
     <!-- Application configuration -->
     <application
@@ -55,6 +55,10 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+            </intent-filter>
         </activity>
 
         <!-- Alarm Receiver -->
@@ -77,6 +81,20 @@
                 <action android:name="androidx.health.connect.client.action.HEALTH_HOME_SETTINGS" />
             </intent-filter>
         </activity>
+
+
+        <activity-alias
+            android:name=".AndroidURationaleActivity"
+            android:exported="true"
+            android:targetActivity=".MainActivity"
+            android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+
+        </activity-alias>
     </application>
 
     <!-- Query Activities -->

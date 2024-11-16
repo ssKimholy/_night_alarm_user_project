@@ -1,9 +1,11 @@
 import 'package:_night_sleep_user/firebase_options.dart';
 import 'package:_night_sleep_user/screen/alarm_screen.dart';
 import 'package:_night_sleep_user/screen/splash_screen.dart';
-import 'package:_night_sleep_user/utils/firebase_realTime_service.dart';
+import 'package:_night_sleep_user/utils/firebase_service.dart';
+
 import 'package:_night_sleep_user/utils/notification_helper.dart';
 import 'package:_night_sleep_user/utils/sleep_service.dart';
+
 import 'package:_night_sleep_user/utils/user_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,28 +22,28 @@ void setupLocator() {
   getIt.registerSingleton<UserService>(UserService());
 }
 
-Future<void> backgroundTask() async {
-  print('backGround sleep data');
+// Future<void> backgroundTask() async {
+//   print('backGround sleep data');
 
-  try {
-    // Fetch sleep data directly
-    print('Calling SleepService.getSleepData...');
-    final List<Map<String, dynamic>> sleepData =
-        await SleepService.getSleepData();
-    print('sleepData: $sleepData');
+//   try {
+//     // Fetch sleep data directly
+//     print('Calling SleepService.getSleepData...');
+//     final List<Map<String, dynamic>> sleepData =
+//         await SleepService.getSleepData();
+//     print('sleepData: $sleepData');
 
-    // Save data to Firebase
-    final firebaseService = FirebaseService();
-    final userService = GetIt.instance<UserService>();
-    int id = await userService.loadUserId();
+//     // Save data to Firebase
+//     final firebaseService = FirebaseService();
+//     final userService = GetIt.instance<UserService>();
+//     int id = await userService.loadUserId();
 
-    if (id != -1) {
-      await firebaseService.saveSleepData(id.toString(), sleepData);
-    }
-  } catch (e) {
-    print("Error in backgroundTask: $e");
-  }
-}
+//     if (id != -1) {
+//       await firebaseService.saveSleepData(id.toString(), sleepData);
+//     }
+//   } catch (e) {
+//     print("Error in backgroundTask: $e");
+//   }
+// }
 
 Future<void> main() async {
   setupLocator();
@@ -53,38 +55,57 @@ Future<void> main() async {
 
   await initializeLocalNotifications();
 
-  Workmanager().initialize(
-    callbackDispatcher,
-    isInDebugMode: true,
-  );
-  Workmanager()
-      .registerOneOffTask(
-    "fetchSleepData",
-    "Fetch Sleep Data",
-    constraints: Constraints(networkType: NetworkType.connected),
-  )
-      .then((_) {
-    print("WorkManager 태스크 등록 완료");
-  }).catchError((e) {
-    print("WorkManager 태스크 등록 실패: $e");
-  });
+  fetchSleepData();
+
+  // Workmanager().initialize(
+  //   callbackDispatcher,
+  //   isInDebugMode: true,
+  // );
+  // Workmanager()
+  //     .registerOneOffTask(
+  //   "fetchSleepData",
+  //   "Fetch Sleep Data",
+  //   constraints: Constraints(networkType: NetworkType.connected),
+  // )
+  //     .then((_) {
+  //   print("WorkManager 태스크 등록 완료");
+  // }).catchError((e) {
+  //   print("WorkManager 태스크 등록 실패: $e");
+  // });
 
   runApp(const MyApp());
 }
 
-void callbackDispatcher() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  Workmanager().executeTask((task, inputData) async {
-    print("백그라운드 작업 실행: $task");
+// void callbackDispatcher() async {
+//   WidgetsFlutterBinding.ensureInitialized();
+//   Workmanager().executeTask((task, inputData) async {
+//     print("백그라운드 작업 실행: $task");
 
-    if (task == "Fetch Sleep Data") {
-      // backgroundTask 호출
-      await backgroundTask();
-      return Future.value(true);
+//     if (task == "Fetch Sleep Data") {
+//       // backgroundTask 호출
+//       await backgroundTask();
+//       return Future.value(true);
+//     }
+
+//     return Future.value(false); // 작업이 성공적으로 완료되었음을 알림
+//   });
+// }
+
+void fetchSleepData() async {
+  final sleepData = await SleepService.getSleepData();
+  if (sleepData.isNotEmpty) {
+    print('not Empty');
+    final userService = GetIt.instance<UserService>();
+    final FirebaseService firebaseService = FirebaseService();
+    int id = await userService.loadUserId();
+    print(id);
+    if (id != -1) {
+      await firebaseService.saveSleepData(id.toString(), sleepData);
     }
-
-    return Future.value(false); // 작업이 성공적으로 완료되었음을 알림
-  });
+    print('Sleep data received: $sleepData');
+  } else {
+    print('No sleep data available');
+  }
 }
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {

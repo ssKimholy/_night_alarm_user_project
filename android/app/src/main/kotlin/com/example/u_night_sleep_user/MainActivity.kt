@@ -1,11 +1,13 @@
 package com.example.u_night_sleep_user
 
+import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.os.PowerManager
 import android.util.Log
 import android.view.WindowManager
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.SleepSessionRecord
@@ -18,25 +20,24 @@ import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import kotlinx.coroutines.launch
-import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 class MainActivity : FlutterFragmentActivity() {
     private lateinit var healthConnectClient: HealthConnectClient
+    private var sleepDataJson: String? = null // Cached sleep data
 
     companion object {
         private const val TAG = "MainActivity"
-        private const val WORK_MANAGER_TAG = "FetchSleepData"
         private const val CHANNEL = "com.example.alarmcare/channel"
+        private const val WORK_MANAGER_TAG = "FetchSleepData"
 
-        // Function to turn on the screen for alarm purposes
         fun turnOnScreen(context: Context) {
             val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
             val wakeLock = pm.newWakeLock(
                 PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
                 "app:alarmWakeLock"
             )
-            wakeLock.acquire(3000) // Acquire for 3 seconds
+            wakeLock.acquire(3000)
 
             val intent = Intent(context, MainActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
@@ -64,72 +65,100 @@ class MainActivity : FlutterFragmentActivity() {
                     WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
         )
 
-        // Schedule background task with WorkManager
-        scheduleWorkManager()
-    }
-
-    // Check if Health Connect is available
-    private fun isHealthConnectAvailable(context: Context): Boolean {
-        val status = HealthConnectClient.getSdkStatus(context)
-        return when (status) {
-            HealthConnectClient.SDK_AVAILABLE -> {
-                Log.d(TAG, "Health Connect SDK is available.")
-                true
-            }
-            HealthConnectClient.SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED -> {
-                Log.e(TAG, "Health Connect provider requires an update.")
-                false
-            }
-            else -> {
-                Log.e(TAG, "Health Connect is unavailable.")
-                false
+        lifecycleScope.launch {
+            if (requestHealthPermissions()) {
+                fetchSleepData()
+//                scheduleWorkManager()
+            } else {
+                Log.e(TAG, "Health Connect permissions not granted.")
             }
         }
     }
 
-    // Schedule periodic work with WorkManager
-    private fun scheduleWorkManager() {
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED) // Requires internet
-            .build()
-
-        val periodicWorkRequest = PeriodicWorkRequestBuilder<BackgroundTaskWorker>(
-            24, TimeUnit.HOURS // Run every 24 hours
-        )
-            .setConstraints(constraints)
-            .addTag(WORK_MANAGER_TAG)
-            .build()
-
-        WorkManager.getInstance(applicationContext).enqueue(periodicWorkRequest)
-        Log.d(TAG, "WorkManager task scheduled.")
+    private val permissionLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            Log.d(TAG, "Permissions granted.")
+            lifecycleScope.launch {
+                val grantedPermissions = healthConnectClient.permissionController.getGrantedPermissions()
+                Log.d(TAG, "Granted permissions: $grantedPermissions")
+                fetchSleepData()
+            }
+        } else {
+            Log.e(TAG, "Permissions denied by the user.")
+            showPermissionDeniedDialog()
+        }
     }
 
-    // Request permissions for Health Connect
+    private fun showPermissionDeniedDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("권한 필요")
+            .setMessage("수면 데이터를 동기화하려면 Health Connect 권한이 필요합니다. 설정에서 권한을 활성화하세요.")
+            .setPositiveButton("설정으로 이동") { _, _ ->
+                try {
+                    val intent = HealthConnectClient.getHealthConnectManageDataIntent(this)
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error opening Health Connect settings", e)
+                }
+            }
+            .setNegativeButton("취소", null)
+            .show()
+    }
+
+    private fun isHealthConnectAvailable(context: Context): Boolean {
+        val status = HealthConnectClient.getSdkStatus(context)
+        return when (status) {
+            HealthConnectClient.SDK_AVAILABLE -> true
+            else -> false
+        }
+    }
+
+//    private fun scheduleWorkManager() {
+//        val constraints = Constraints.Builder()
+//            .setRequiredNetworkType(NetworkType.CONNECTED)
+//            .build()
+//
+//        val periodicWorkRequest = PeriodicWorkRequestBuilder<BackgroundTaskWorker>(
+//            24, TimeUnit.HOURS
+//        )
+//            .setConstraints(constraints)
+//            .addTag(WORK_MANAGER_TAG)
+//            .build()
+//
+//        WorkManager.getInstance(applicationContext).enqueue(periodicWorkRequest)
+//        Log.d(TAG, "WorkManager task scheduled.")
+//    }
+
     private suspend fun requestHealthPermissions(): Boolean {
         val permissions = setOf(
             HealthPermission.getReadPermission(SleepSessionRecord::class),
             HealthPermission.getWritePermission(SleepSessionRecord::class)
         )
 
-        Log.d(TAG, "Requesting permissions for: $permissions")
-
         val grantedPermissions = healthConnectClient.permissionController.getGrantedPermissions()
-        Log.d(TAG, "Currently granted permissions: $grantedPermissions")
-
-        if (permissions.all { it in grantedPermissions }) {
-            Log.d(TAG, "All permissions are already granted.")
-            return true
-        }
+        if (permissions.all { it in grantedPermissions }) return true
 
         try {
             val intent = HealthConnectClient.getHealthConnectManageDataIntent(this)
-            startActivity(intent)
+            permissionLauncher.launch(intent)
         } catch (e: Exception) {
             Log.e(TAG, "Error requesting permissions", e)
             return false
         }
-
         return false
+    }
+
+    private suspend fun fetchSleepData() {
+        try {
+            val manager = HealthConnectManager(this)
+            val sleepDataArray = manager.fetchSleepDataAsJsonArray()
+            sleepDataJson = sleepDataArray.toString()
+            Log.d(TAG, "Fetched sleep data: $sleepDataJson")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching sleep data", e)
+        }
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -150,27 +179,10 @@ class MainActivity : FlutterFragmentActivity() {
                         result.success(data)
                     }
                     "getSleepData" -> {
-                        val start = Instant.now().minusSeconds(86400)
-                        val end = Instant.now()
-
-                        Log.d("MainActivity", "Flutter invoked getSleepData")
-
-                        lifecycleScope.launch {
-                            try {
-                                if (requestHealthPermissions()) {
-                                    Log.d("MainActivity", "Health permissions granted")
-                                    val manager = HealthConnectManager(this@MainActivity)
-                                    val dataJson = manager.fetchAndSaveSleepData()
-                                    Log.d("MainActivity", "Sleep data fetched: $dataJson")
-                                    result.success(dataJson)
-                                } else {
-                                    Log.d("MainActivity", "Health permissions not granted")
-                                    result.error("PERMISSION_DENIED", "Health permissions not granted", null)
-                                }
-                            } catch (e: Exception) {
-                                Log.e("MainActivity", "Error in getSleepData", e)
-                                result.error("ERROR", e.message, null)
-                            }
+                        if (sleepDataJson != null) {
+                            result.success(sleepDataJson)
+                        } else {
+                            result.error("NO_DATA", "No sleep data available", null)
                         }
                     }
                     else -> result.notImplemented()
