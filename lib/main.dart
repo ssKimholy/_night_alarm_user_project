@@ -55,8 +55,6 @@ Future<void> main() async {
 
   await initializeLocalNotifications();
 
-  fetchSleepData();
-
   // Workmanager().initialize(
   //   callbackDispatcher,
   //   isInDebugMode: true,
@@ -91,19 +89,32 @@ Future<void> main() async {
 //   });
 // }
 
-void fetchSleepData() async {
+void fetchSleepData(BuildContext context) async {
   final sleepData = await SleepService.getSleepData();
   if (sleepData.isNotEmpty) {
     print('not Empty');
+    print("Context: $context");
     final userService = GetIt.instance<UserService>();
     final FirebaseService firebaseService = FirebaseService();
     int id = await userService.loadUserId();
     print(id);
     if (id != -1) {
       await firebaseService.saveSleepData(id.toString(), sleepData);
+      if (context.mounted) {
+        const snackBar = SnackBar(
+          content: Text('수면 데이터가 정상적으로 저장되었습니다.'),
+          duration: Duration(seconds: 2),
+        );
+        ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      }
     }
     print('Sleep data received: $sleepData');
   } else {
+    const snackBar = SnackBar(
+      content: Text('수면 데이터가 없습니다.'),
+      duration: Duration(seconds: 2),
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
     print('No sleep data available');
   }
 }

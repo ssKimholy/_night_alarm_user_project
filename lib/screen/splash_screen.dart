@@ -1,3 +1,4 @@
+import 'package:_night_sleep_user/main.dart';
 import 'package:_night_sleep_user/screen/alarm_screen.dart';
 import 'package:_night_sleep_user/screen/onBoarding_screen.dart';
 import 'package:_night_sleep_user/screen/user_main_screen.dart';
@@ -59,6 +60,10 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      fetchSleepData(context);
+    });
+
     return const Scaffold(
       body: Center(
         child: CircularProgressIndicator(),
